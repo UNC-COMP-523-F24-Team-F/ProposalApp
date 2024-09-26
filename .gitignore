@@ -1,0 +1,8 @@
+**/build
+**/.cache
+**/.idea
+**/.vs
+**/.vscode
+**/.DS_Store
+**/.venv
+**/__pycache__
