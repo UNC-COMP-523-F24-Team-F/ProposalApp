@@ -28,6 +28,9 @@ Install Python 3: https://www.python.org/downloads/
 
 Install Python package dependencies: `pip install -r /path/to/requirements.txt`
 
+Add `.env` file (get from a teammate)
+EVERYTHING IN `.env` SHOULD BE KEPT PRIVATE (NOT COMMITTED) AS THEY ARE API KEYS
+
 ### Add Python Package:
 
 Install package: `pip install <package name>`
@@ -61,3 +64,5 @@ Note: run commands inside `server` directory
 `flask --app server run`
 
 ## Deploy Website
+
+TODO
