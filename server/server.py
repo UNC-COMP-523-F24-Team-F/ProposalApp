@@ -1,29 +1,28 @@
 from flask import Flask, send_from_directory
 from dotenv import load_dotenv
 from os import path, getenv
-from huggingface_hub import InferenceClient
 
 load_dotenv()
+
+from foa import FOA
+from rasr import RASR
+from checklist import Checklist
+from ai import AI
+import pyodbc
 
 # setup huggingface serverless api
 HF_API_KEY = getenv("HF_API_KEY")
 GEN_MODEL = "meta-llama/Llama-3.2-3B-Instruct" # for text generation
 QA_MODEL = "deepset/roberta-base-squad2" # for question answering
+SERVER_NAME = getenv("SERVER_NAME")
 
-class AI:
-  client = InferenceClient(api_key=HF_API_KEY)
-
-  def text_gen(prompt):
-    return AI.client.text_generation(
-      prompt=prompt,
-      model=GEN_MODEL,
-      max_new_tokens=500,
-      stream=False,
-    )
-
-  def qa(question, context=""):
-    response = AI.client.question_answering(question=question, context=context, model=QA_MODEL)
-    return response.answer
+# setup microsoft sql server connection
+"""
+cnxn = pyodbc.connect("Driver={SQL Server Native Client 11.0};"
+                      f"Server={SERVER_NAME};"
+                      "Database={DB_NAME};"
+                      "Trusted_Connection=yes;")
+"""
 
 app = Flask(__name__)
 
@@ -42,4 +41,11 @@ def index():
 # ping huggingface ai
 @app.route('/ping_ai', methods=['GET'])
 def ping_ai():
-  return AI.qa("What is my name?", context="My name is Joe Biden.")
+  return AI.qa("What is my name?", context="My name is Alex.")
+
+# test
+print(AI.to_date("8/15/24"))
+print(AI.to_date("3/31/2024"))
+print(AI.to_date("october 21 2004"))
+foa = FOA(path.join(DIR, "example_foa.pdf"))
+checklist = Checklist(foa, None)
