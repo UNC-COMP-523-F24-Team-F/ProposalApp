@@ -44,8 +44,8 @@ def ping_ai():
   return AI.qa("What is my name?", context="My name is Alex.")
 
 # test
-print(AI.to_date("8/15/24"))
-print(AI.to_date("3/31/2024"))
-print(AI.to_date("october 21 2004"))
+# print(AI.to_date("8/15/24"))
+# print(AI.to_date("3/31/2024"))
+# print(AI.to_date("october 21 2004"))
 foa = FOA(path.join(DIR, "example_foa.pdf"))
 checklist = Checklist(foa, None)
