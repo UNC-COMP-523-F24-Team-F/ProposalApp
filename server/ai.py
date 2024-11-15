@@ -2,19 +2,23 @@ from os import getenv
 from huggingface_hub import InferenceClient
 from datetime import datetime
 from langchain_unstructured.document_loaders import UnstructuredLoader
-from langchain_community.document_loaders import PyMuPDFLoader
-from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_community.document_loaders import PyMuPDFLoader, TextLoader
+from langchain.text_splitter import RecursiveCharacterTextSplitter, CharacterTextSplitter
 from langchain_core.documents.base import Document
 from langchain_chroma import Chroma
+from langchain_community.docstore.in_memory import InMemoryDocstore
+from langchain_community.vectorstores import FAISS
+from uuid import uuid4
 from langchain_huggingface import HuggingFaceEndpoint, HuggingFaceEmbeddings
 from langchain_core.messages.base import BaseMessage
 from langchain import hub
-from langchain_core.runnables import RunnablePassthrough, RunnableSequence
+from langchain_core.runnables import RunnablePassthrough, RunnableSequence, RunnableLambda
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import PromptTemplate
 import chromadb
 import re
 import numpy
+import faiss
 
 # setup huggingface serverless api
 HF_API_KEY = getenv("HF_API_KEY")
@@ -26,16 +30,27 @@ SCORE_THRESHOLD = 0.3 # answers with scores lower than this threshold will be ig
 
 # pdf conversion properties
 CHUNK_SIZE = 512
-CHUNK_OVERLAP = 96
+CHUNK_OVERLAP = 128
 
 # langchain setup
+vdb_prompt = PromptTemplate(
+  template="""
+  You are an assistant for extracting the semantic meaning of a question for querying in a vector database. Please list the semantic keywords associated with the following user query in a space separated list of disjoint words. Do not explain or say anything other than the list. Make sure to include any key words or numbers in the list. End the list with \"End\".
+  
+  Query: {query}
+
+  List:
+  """,
+  input_variables=["query"]
+)
+
 prompt = PromptTemplate(
   template="""
-  You are an assistant for question-answering tasks. Use the following pieces of retrieved context to answer the question. If you don't know the answer, just say that you don't know. Answer as a single phrase fill in the blank response. Your answer should be contained within the context. Say \"End of answer.\" when your answer is complete.
+  You are an assistant for question-answering tasks for information on the following Funding Opportunity Announcement (FOA) document. Use the following pieces of retrieved context to answer the question. If you don't know the answer, just say that you don't know. Answer as a single phrase fill in the blank response. Your answer should be contained within the context. Say \"End of answer.\" when your answer is complete.
 
   Question: {question} 
 
-  Context: {context} 
+  Definitions: {context} 
 
   Answer:
   """,
@@ -56,18 +71,31 @@ def get_question(input):
         return input.content
     else:
         raise Exception("string or dict with 'question' key expected as RAG chain input.")
+    
+def trimmer(input: str):
+  return re.sub(r"\s+", " ", input.strip().replace(",", " "))
 
 # interface for pinging ai
 class AI:
+  print("Setting Up AI")
   client = InferenceClient(api_key=HF_API_KEY)
   vdb_client = chromadb.PersistentClient()
   embeddings = HuggingFaceEmbeddings()
   
+  """
   vdb = Chroma(
     embedding_function=embeddings,
     client=vdb_client,
     collection_name="vdb",
     persist_directory="./tmp/chroma_langchain_db"
+  )
+  """
+
+  vdb = FAISS(
+    embedding_function=embeddings,
+    index = faiss.IndexFlatL2(len(embeddings.embed_query("hello world"))),
+    docstore=InMemoryDocstore(),
+    index_to_docstore_id={}
   )
 
   qa_llm = HuggingFaceEndpoint(
@@ -77,8 +105,31 @@ class AI:
     stop_sequences=["I don't know", "I don't have enough information", "End of answer"]
   )
 
-  retriever = vdb.as_retriever(k=6)
+  vdb_llm = HuggingFaceEndpoint(
+    repo_id=GEN_MODEL,
+    huggingfacehub_api_token=HF_API_KEY,
+    streaming=False,
+    stop_sequences=["End"]
+  )
+
+  retriever = vdb.as_retriever(
+    search_kwargs={'k': 6}
+  )
+
+  print("Loading Documents")
+  # TODO: reduce PDF to a list of definitions, make each definition a document (better for vector store)
+  """
+  loader = PyMuPDFLoader(file_path="./proposal_handbook.pdf")
+  pages = loader.load()
+  text_splitter = RecursiveCharacterTextSplitter(chunk_size = 1024, chunk_overlap = 256)
+  docs = text_splitter.split_documents(pages)
+  doc_ids = [f"class info doc {i}" for i in range(len(docs))]
+  print(f"{len(docs)} Documents Loaded")
+  print("Filling Vector Database")
+  vdb.add_documents(documents=docs, ids=doc_ids)
+  """
   
+  vdb_chain: RunnableSequence = vdb_prompt | vdb_llm | StrOutputParser() | RunnableLambda(trimmer)
   qa_chain: RunnableSequence = prompt | qa_llm | StrOutputParser()
 
   # convert text into a vector
@@ -86,7 +137,7 @@ class AI:
     return AI.client.feature_extraction(text=data, prompt_name=name, model=FE_MODEL)
 
   # convert pdf to langchain doc splits
-  def pdf_to_doc_splits(file_path: str, detailed=False) -> list[Document]:
+  def pdf_to_doc_splits(file_path: str, detailed=False) -> tuple[list[Document], list[Document]]:
     if detailed:
       # currently doesn't work on windows (libmagic doesn't exist)
       loader = UnstructuredLoader(
@@ -101,7 +152,7 @@ class AI:
       pages = loader.load()
       text_splitter = RecursiveCharacterTextSplitter(chunk_size = CHUNK_SIZE, chunk_overlap = CHUNK_OVERLAP)
       docs = text_splitter.split_documents(pages)
-    return docs
+    return docs, pages
 
   # generate text
   def text_gen(prompt, max_length=500, **kwargs):
@@ -138,9 +189,12 @@ class AI:
     return response.answer if response.score >= SCORE_THRESHOLD else None
   
   # answer a question using rag
-  def rag_qa(question):
+  def rag_qa(question, foa_data, vdb_query=""):
     print(f"rag question: {question}")
-    context = format_docs(AI.retriever.invoke(question))
+    if vdb_query == "":
+      vdb_query = AI.vdb_chain.invoke(input={"query": question})
+    print(f"vdb query: {vdb_query}")
+    context = format_docs(AI.retriever.invoke(vdb_query))
     response = AI.qa_chain.invoke({"question": question, "context": context})
     print(f"rag response: {response}")
     return response

@@ -24,11 +24,11 @@ class Checklist:
         "foa url": self.rasr,
       },
       "project overview": {
-        "agency": self.foa.qa("What is the agency or organization responsible for this project?"),
-        "code": self.foa.qa("What is the project or activity code?"),
-        "pa/foa": self.foa.qa("What is the PA/FOA identifier aka the Funding Opporunity Number?"),
-        "funding opportunity title": self.foa.qa("What is the Funding Opportunity Title?"),
-        "project duration": self.foa.qa("How long is will the project take?"),
+        "agency": self.foa.qa("What is the agency or organization responsible for this project?", "agency organization"),
+        "code": self.foa.qa("What is the project or activity code?", "project activity code"),
+        "pa/foa": self.foa.qa("What is the PA/FOA identifier aka the Funding Opporunity Number?", "funding opportunity number identifier"),
+        "funding opportunity title": self.foa.qa("What is the Funding Opportunity Title?", "funding opportunity title"),
+        "project duration": self.foa.qa("How long is will the project take?", "project duration years length"),
       },
       "due dates": {
         "intention to submit": None, # 4 weeks prior to sponsor deadline
