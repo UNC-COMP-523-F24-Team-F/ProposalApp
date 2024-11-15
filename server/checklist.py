@@ -3,6 +3,7 @@ from foa import FOA
 from rasr import RASR
 from os import path
 from datetime import datetime
+from unc_calendar import UNCCalendar
 
 class Checklist:
   def __init__(self, foa: FOA, rasr: RASR):
@@ -49,7 +50,14 @@ class Checklist:
       }
     }
 
-    print(self.data)
+    # calculate due dates
+    due_dates = self.data["due dates"]
+    deadline = due_dates["final proposal to sponsor"]
+    if isinstance(deadline, datetime):
+      due_dates["full proposal with final science"] = UNCCalendar.add_business_days(deadline, -2)
+      due_dates["ipf with basic science"] = UNCCalendar.add_business_days(deadline, -5)
+      due_dates["final budget/justification"] = UNCCalendar.add_business_days(deadline, -10)
+      due_dates["intention to submit"] = UNCCalendar.add_business_weeks(deadline, -4)
 
   def validate(self):
     # general validator generators

@@ -1,6 +1,7 @@
 from flask import Flask, send_from_directory
 from dotenv import load_dotenv
 from os import path, getenv
+import json
 
 load_dotenv()
 
@@ -49,3 +50,5 @@ def ping_ai():
 # print(AI.to_date("october 21 2004"))
 foa = FOA(path.join(DIR, "example_foa.pdf"))
 checklist = Checklist(foa, None)
+
+print(json.dumps(checklist.data, indent=4, sort_keys=True, default=str))
