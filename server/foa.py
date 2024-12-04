@@ -1,6 +1,10 @@
 from os import path
 from ai import *
 
+# represents an FOA document
+# loads into vector store on construction
+# removes from vector store on destruction
+# ensure only one exists at a time to prevent interference.
 class FOA:
   def __init__(self, file_path):
     print("LOADING FOA")
