@@ -27,7 +27,7 @@ class Checklist:
       "project overview": {
         "agency": self.foa.qa("What is the agency or organization responsible for this project?", "agency organization"),
         "code": self.foa.qa("What is the project or activity code?", "project activity code"),
-        "pa/foa": self.foa.qa("What is the PA/FOA identifier aka the Funding Opporunity Number?", "funding opportunity number identifier"),
+        "pa/foa": self.foa.qa("What is the PA/FOA identifier aka the Funding Opporunity Number or PAR number?", "funding opportunity number identifier PAR"),
         "funding opportunity title": self.foa.qa("What is the Funding Opportunity Title?", "funding opportunity title"),
         "project duration": self.foa.qa("How long is will the project take?", "project duration years length"),
       },
@@ -36,9 +36,9 @@ class Checklist:
         "final budget/justification": None, # 10 business days prior
         "ipf with basic science": None, # 5 business days prior
         "full proposal with final science": None, # 2 business days prior
-        "final proposal to sponsor": AI.to_date(self.foa.qa("What date will this proposal be finalized?")),
+        "final proposal to sponsor": AI.to_date(self.foa.qa("What date will this proposal be finalized? (Here are some terms you should look for: \"Full proposals must be received by\", \"Expiration date\", \"Application due date\", \"Target Date(s)\", \"Full proposal target date\", \"annually thereafter\")", "Full proposals must be received by, Expiration date, Application due date, Target Dates, Target Date, Full proposal target date,... annually thereafter")),
         "time": AI.to_date(self.foa.qa("What date was this document posted?")),
-        "time zone": self.foa.qa("What time zone does this document use?")
+        "time zone": self.foa.qa("What is the local time zone of the applicant organization?", "time zone date")
       },
       "project details": {
         "new or renew or resub": self.rasr,
@@ -60,6 +60,7 @@ class Checklist:
       due_dates["intention to submit"] = UNCCalendar.add_business_weeks(deadline, -4)
 
   # WIP validators (might want to replace with actual schema library)
+  # currently doesn't work
   def validate(self):
     # general validator generators
     def req_v():

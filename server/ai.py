@@ -2,31 +2,39 @@ from os import getenv
 from huggingface_hub import InferenceClient
 from datetime import datetime
 from langchain_unstructured.document_loaders import UnstructuredLoader
-from langchain_community.document_loaders import PyMuPDFLoader, TextLoader
-from langchain.text_splitter import RecursiveCharacterTextSplitter, CharacterTextSplitter
+from langchain_community.document_loaders import PyMuPDFLoader
+from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_core.documents.base import Document
-from langchain_chroma import Chroma
 from langchain_community.docstore.in_memory import InMemoryDocstore
 from langchain_community.vectorstores import FAISS
-from uuid import uuid4
 from langchain_huggingface import HuggingFaceEndpoint, HuggingFaceEmbeddings
 from langchain_core.messages.base import BaseMessage
-from langchain import hub
-from langchain_core.runnables import RunnablePassthrough, RunnableSequence, RunnableLambda
+from langchain_core.runnables import RunnableSequence, RunnableLambda
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import PromptTemplate
-import chromadb
 import re
 import numpy
 import faiss
 
+"""
+imports for chromadb instead of FAISS for vector store
+
+from langchain_chroma import Chroma
+import chromadb
+"""
+
 # setup huggingface serverless api
+# note: in the future, should probably be setup as an inference model (but this might cost money)
 HF_API_KEY = getenv("HF_API_KEY")
-GEN_MODEL = "meta-llama/Llama-3.2-11B-Vision-Instruct" # for text generation
+
+# note: Vision-Instruct broke due to gradio update, might be fixed by the time you read this
+# for rag question answering
+# GEN_MODEL = "meta-llama/Llama-3.2-11B-Vision-Instruct"
+GEN_MODEL = "meta-llama/Llama-3.2-3B-Instruct" # "meta-llama/Llama-3.2-11B-Vision-Instruct"
+
 FE_MODEL = "thenlper/gte-large" # for feature extraction
-QA_MODEL = "deepset/roberta-base-squad2" # for question answering
-SERVER_NAME = getenv("SERVER_NAME")
-SCORE_THRESHOLD = 0.3 # answers with scores lower than this threshold will be ignored
+QA_MODEL = "deepset/roberta-base-squad2" # for non-rag question answering (mostly depreciated, mostly used for pinging)
+SCORE_THRESHOLD = 0.3 # answers with scores lower than this threshold will be ignored (only works for non-rag responses)
 
 # pdf conversion properties
 CHUNK_SIZE = 512
@@ -79,10 +87,11 @@ def trimmer(input: str):
 class AI:
   print("Setting Up AI")
   client = InferenceClient(api_key=HF_API_KEY)
-  vdb_client = chromadb.PersistentClient()
   embeddings = HuggingFaceEmbeddings()
   
+  # chromadb vector store (inactive)
   """
+  vdb_client = chromadb.PersistentClient()
   vdb = Chroma(
     embedding_function=embeddings,
     client=vdb_client,
@@ -91,6 +100,7 @@ class AI:
   )
   """
 
+  # FAISS vector store
   vdb = FAISS(
     embedding_function=embeddings,
     index = faiss.IndexFlatL2(len(embeddings.embed_query("hello world"))),
@@ -98,6 +108,7 @@ class AI:
     index_to_docstore_id={}
   )
 
+  # HuggingFace setup
   qa_llm = HuggingFaceEndpoint(
     repo_id=GEN_MODEL,
     huggingfacehub_api_token=HF_API_KEY,
@@ -118,6 +129,7 @@ class AI:
 
   print("Loading Documents")
   # TODO: reduce PDF to a list of definitions, make each definition a document (better for vector store)
+  # currently tanks performance
   """
   loader = PyMuPDFLoader(file_path="./proposal_handbook.pdf")
   pages = loader.load()
@@ -188,7 +200,7 @@ class AI:
     print(f"response: {response}")
     return response.answer if response.score >= SCORE_THRESHOLD else None
   
-  # answer a question using rag
+  # answer a question using rag (retrieval augmented generation aka: vector store)
   def rag_qa(question, foa_data, vdb_query=""):
     print(f"rag question: {question}")
     if vdb_query == "":

@@ -9,16 +9,10 @@ from foa import FOA
 from rasr import RASR
 from checklist import Checklist
 from ai import AI
-import pyodbc
 
-# setup huggingface serverless api
-HF_API_KEY = getenv("HF_API_KEY")
-GEN_MODEL = "meta-llama/Llama-3.2-3B-Instruct" # for text generation
-QA_MODEL = "deepset/roberta-base-squad2" # for question answering
-SERVER_NAME = getenv("SERVER_NAME")
-
-# setup microsoft sql server connection
+# setup microsoft sql server connection (TBA when RASR view is available)
 """
+import pyodbc
 cnxn = pyodbc.connect("Driver={SQL Server Native Client 11.0};"
                       f"Server={SERVER_NAME};"
                       "Database={DB_NAME};"
@@ -42,12 +36,16 @@ def index():
 # ping huggingface ai
 @app.route('/ping_ai', methods=['GET'])
 def ping_ai():
-  return AI.qa("What is my name?", context="My name is Alex.")
+  print("PINGING QA")
+  AI.qa("What is my name?", context="My name is Alex.")
+  print("PINGING RAG QA")
+  AI.rag_qa("test", "", "")
 
 # test
 # print(AI.to_date("8/15/24"))
 # print(AI.to_date("3/31/2024"))
 # print(AI.to_date("october 21 2004"))
+ping_ai() # ensure hf is working (goes out of date often)
 foa = FOA(path.join(DIR, "example_foa.pdf"))
 checklist = Checklist(foa, None)
 
