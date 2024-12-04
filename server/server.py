@@ -32,7 +32,7 @@ def ping_ai():
   print("PINGING RAG QA")
   AI.rag_qa("test", "", "")
 
-# test
+# DRIVER CODE
 # print(AI.to_date("8/15/24"))
 # print(AI.to_date("3/31/2024"))
 # print(AI.to_date("october 21 2004"))
