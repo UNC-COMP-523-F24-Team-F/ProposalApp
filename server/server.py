@@ -10,15 +10,6 @@ from rasr import RASR
 from checklist import Checklist
 from ai import AI
 
-# setup microsoft sql server connection (TBA when RASR view is available)
-"""
-import pyodbc
-cnxn = pyodbc.connect("Driver={SQL Server Native Client 11.0};"
-                      f"Server={SERVER_NAME};"
-                      "Database={DB_NAME};"
-                      "Trusted_Connection=yes;")
-"""
-
 app = Flask(__name__)
 
 DIR = path.dirname(__file__)
