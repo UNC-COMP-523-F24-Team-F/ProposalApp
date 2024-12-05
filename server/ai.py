@@ -26,10 +26,9 @@ import chromadb
 # note: in the future, should probably be setup as an inference model (but this might cost money)
 HF_API_KEY = getenv("HF_API_KEY")
 
-# note: Vision-Instruct broke due to gradio update, might be fixed by the time you read this
 # for rag question answering
-# GEN_MODEL = "meta-llama/Llama-3.2-11B-Vision-Instruct"
-GEN_MODEL = "meta-llama/Llama-3.2-3B-Instruct" # "meta-llama/Llama-3.2-11B-Vision-Instruct"
+# GEN_MODEL = "meta-llama/Llama-3.2-3B-Instruct"
+GEN_MODEL = "meta-llama/Llama-3.2-11B-Vision-Instruct"
 
 FE_MODEL = "thenlper/gte-large" # for feature extraction
 QA_MODEL = "deepset/roberta-base-squad2" # for non-rag question answering (mostly depreciated, mostly used for pinging)
