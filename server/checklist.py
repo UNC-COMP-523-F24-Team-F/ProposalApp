@@ -12,6 +12,7 @@ class Checklist:
     self.rasr = rasr
     self.foa_data = {}
     self.data = {}
+    self.path = "../ProposalChecklist.xlsx";
 
     # uncomment to output converted pdf as a file:
     # with open(path.join(path.dirname(__file__), "foa.txt"), "w", encoding="utf-8") as f:
@@ -171,8 +172,8 @@ class Checklist:
       errs += validator("", self.data)
     return errs
 
-  def fill_checklist(self):
-    workbook = openpyxl.load_workbook("../ProposalChecklist.xlsx")
+  def fill_checklist(self, path):
+    workbook = openpyxl.load_workbook(path)
     sheet = workbook["Checklist Template"]
 
     sheet["B5"] = self.data["project overview"]["agency"]
@@ -189,4 +190,4 @@ class Checklist:
     sheet["B18"] = self.data["due dates"]["time"] + " " + self.data["due dates"]["time zone"]
 
 
-    workbook.save("../checklist_modified.xlsx")
+    workbook.save("./checklist_modified.xlsx")
