@@ -1,7 +1,6 @@
 from os import getenv
 from huggingface_hub import InferenceClient
 from datetime import datetime
-from langchain_unstructured.document_loaders import UnstructuredLoader
 from langchain_community.document_loaders import PyMuPDFLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_core.documents.base import Document
@@ -149,21 +148,11 @@ class AI:
     return AI.client.feature_extraction(text=data, prompt_name=name, model=FE_MODEL)
 
   # convert pdf to langchain doc splits
-  def pdf_to_doc_splits(file_path: str, detailed=False) -> tuple[list[Document], list[Document]]:
-    if detailed:
-      # currently doesn't work on windows (libmagic doesn't exist)
-      loader = UnstructuredLoader(
-        file_path=file_path,
-        strategy="fast",
-        partition_via_api=False,
-        coordinates=False
-      )
-      docs = loader.load()
-    else:
-      loader = PyMuPDFLoader(file_path=file_path)
-      pages = loader.load()
-      text_splitter = RecursiveCharacterTextSplitter(chunk_size = CHUNK_SIZE, chunk_overlap = CHUNK_OVERLAP)
-      docs = text_splitter.split_documents(pages)
+  def pdf_to_doc_splits(file_path: str) -> tuple[list[Document], list[Document]]:
+    loader = PyMuPDFLoader(file_path=file_path)
+    pages = loader.load()
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size = CHUNK_SIZE, chunk_overlap = CHUNK_OVERLAP)
+    docs = text_splitter.split_documents(pages)
     return docs, pages
 
   # generate text
