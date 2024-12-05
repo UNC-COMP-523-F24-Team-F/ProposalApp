@@ -6,11 +6,13 @@ from ai import *
 # removes from vector store on destruction
 # ensure only one exists at a time to prevent interference.
 class FOA:
+  id_offset = 0 # can't re-add docs with deleted ids
   def __init__(self, file_path):
     print("LOADING FOA")
     splits, pages = AI.pdf_to_doc_splits(file_path)
     self.data = "\n\n".join([page.page_content for page in pages])
-    self.doc_ids = [f"FOA {i}" for i in range(len(splits))]
+    self.doc_ids = [f"FOA {i+FOA.id_offset}" for i in range(len(splits))]
+    FOA.id_offset += len(self.doc_ids)
     print("WRITING FOA")
     AI.vdb.add_documents(documents=splits, ids=self.doc_ids)
     print("FOA LOADED")

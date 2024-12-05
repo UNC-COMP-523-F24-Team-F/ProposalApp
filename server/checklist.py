@@ -172,9 +172,12 @@ class Checklist:
       errs += validator("", self.data)
     return errs
 
-  def fill_checklist(self, path, output_path):
-    workbook = openpyxl.load_workbook(path)
+  def fill_checklist(self, template_path, output_path):
+    workbook = openpyxl.load_workbook(template_path)
     sheet = workbook["Checklist Template"]
+    sheet.title = "Checklist"
+    workbook.remove(workbook["Checklist Fields"])
+    print(f"Outputing Checklist to {output_path}")
 
     sheet["B5"] = self.data["project overview"]["agency"]
     sheet["B6"] = self.data["project overview"]["code"]
