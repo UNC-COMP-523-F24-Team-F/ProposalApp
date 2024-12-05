@@ -39,5 +39,6 @@ def ping_ai():
 ping_ai() # ensure hf is working (goes out of date often)
 foa = FOA(path.join(DIR, "example_foa.pdf"))
 checklist = Checklist(foa, None)
+checklist.fill_checklist(path.join(DIR, "..", "ChecklistTemplate.xlsx"), path.join(DIR, "OutputChecklist.xlsx"))
 
 print(json.dumps(checklist.data, indent=4, sort_keys=True, default=str))

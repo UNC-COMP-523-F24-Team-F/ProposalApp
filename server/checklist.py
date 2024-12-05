@@ -37,7 +37,7 @@ class Checklist:
       },
       "due dates": {
         "intention to submit": None, # 4 weeks prior to sponsor deadline
-        "final budget/justification": None, # 10 business days prior
+        "final budget justification": None, # 10 business days prior
         "ipf with basic science": None, # 5 business days prior
         "full proposal with final science": None, # 2 business days prior
         "final proposal to sponsor": AI.to_date(self.foa.qa("What date will this proposal be finalized? (Here are some terms you should look for: \"Full proposals must be received by\", \"Expiration date\", \"Application due date\", \"Target Date(s)\", \"Full proposal target date\", \"annually thereafter\")", "Full proposals must be received by, Expiration date, Application due date, Target Dates, Target Date, Full proposal target date,... annually thereafter")),
@@ -60,7 +60,7 @@ class Checklist:
     if isinstance(deadline, datetime):
       due_dates["full proposal with final science"] = UNCCalendar.add_business_days(deadline, -2)
       due_dates["ipf with basic science"] = UNCCalendar.add_business_days(deadline, -5)
-      due_dates["final budget/justification"] = UNCCalendar.add_business_days(deadline, -10)
+      due_dates["final budget justification"] = UNCCalendar.add_business_days(deadline, -10)
       due_dates["intention to submit"] = UNCCalendar.add_business_weeks(deadline, -4)
 
   # WIP validators (might want to replace with actual schema library)
@@ -172,22 +172,21 @@ class Checklist:
       errs += validator("", self.data)
     return errs
 
-  def fill_checklist(self, path):
+  def fill_checklist(self, path, output_path):
     workbook = openpyxl.load_workbook(path)
     sheet = workbook["Checklist Template"]
 
     sheet["B5"] = self.data["project overview"]["agency"]
-    sheet["B6"] = self.foa_data["project overview"]["code"]
-    sheet["B7"] = self.foa_data["project overview"]["pa/foa"]
-    sheet["B8"] = self.foa_data["project overview"]["funding opportunity title"]
-    sheet["B9"] = self.foa_data["project overview"]["project duration"]
+    sheet["B6"] = self.data["project overview"]["code"]
+    sheet["B7"] = self.data["project overview"]["pa/foa"]
+    sheet["B8"] = self.data["project overview"]["funding opportunity title"]
+    sheet["B9"] = self.data["project overview"]["project duration"]
 
     sheet["B13"] = self.data["due dates"]["intention to submit"]
     sheet["B14"] = self.data["due dates"]["final budget justification"]
     sheet["B15"] = self.data["due dates"]["ipf with basic science"]
     sheet["B16"] = self.data["due dates"]["full proposal with final science"]
     sheet["B17"] = self.data["due dates"]["final proposal to sponsor"]
-    sheet["B18"] = self.data["due dates"]["time"] + " " + self.data["due dates"]["time zone"]
-
-
-    workbook.save("./checklist_modified.xlsx")
+    sheet["B18"] = self.data["due dates"]["time"].strftime("%Y-%m-%d") + " " + self.data["due dates"]["time zone"]
+    
+    workbook.save(output_path)
