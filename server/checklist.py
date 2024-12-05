@@ -4,11 +4,14 @@ from rasr import RASR
 from os import path
 from datetime import datetime
 from unc_calendar import UNCCalendar
+import openpyxl
 
 class Checklist:
   def __init__(self, foa: FOA, rasr: RASR):
     self.foa = foa
     self.rasr = rasr
+    self.foa_data = {}
+    self.data = {}
 
     # uncomment to output converted pdf as a file:
     # with open(path.join(path.dirname(__file__), "foa.txt"), "w", encoding="utf-8") as f:
@@ -167,3 +170,23 @@ class Checklist:
     for validator in schema:
       errs += validator("", self.data)
     return errs
+
+  def fill_checklist(self):
+    workbook = openpyxl.load_workbook("../ProposalChecklist.xlsx")
+    sheet = workbook["Checklist Template"]
+
+    sheet["B5"] = self.data["project overview"]["agency"]
+    sheet["B6"] = self.foa_data["project overview"]["code"]
+    sheet["B7"] = self.foa_data["project overview"]["pa/foa"]
+    sheet["B8"] = self.foa_data["project overview"]["funding opportunity title"]
+    sheet["B9"] = self.foa_data["project overview"]["project duration"]
+
+    sheet["B13"] = self.data["due dates"]["intention to submit"]
+    sheet["B14"] = self.data["due dates"]["final budget justification"]
+    sheet["B15"] = self.data["due dates"]["ipf with basic science"]
+    sheet["B16"] = self.data["due dates"]["full proposal with final science"]
+    sheet["B17"] = self.data["due dates"]["final proposal to sponsor"]
+    sheet["B18"] = self.data["due dates"]["time"] + " " + self.data["due dates"]["time zone"]
+
+
+    workbook.save("../checklist_modified.xlsx")
